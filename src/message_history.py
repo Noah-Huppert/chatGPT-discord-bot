@@ -87,44 +87,30 @@ class ConversationHistory(BaseModel):
 class ConversationHistoryRepoObject:
     """ Extends the pure dataclass ConversationHistory with database operations.
     Fields:
-    - redis_client: The Redis client
-    - username_mapper: Implementation of usernames mapper
+    - _redis_client: The Redis client
+    - _username_mapper: Implementation of usernames mapper
+    - _redis_key: Key in which data will be stored in Redis
+    - data: The underlying conversation history object
     """    
     _redis_client: redis.Redis
     _usernames_mapper: UsernamesMapper
     _redis_key: str
 
-    _conversation_history: ConversationHistory
+    data: ConversationHistory
 
-    def __init__(self, redis_client: redis.Redis, usernames_mapper: UsernamesMapper, redis_key: str, conversation_history: ConversationHistory):
+    def __init__(self, redis_client: redis.Redis, usernames_mapper: UsernamesMapper, redis_key: str, data: ConversationHistory):
         """ Initializes.
         """
         self._redis_client = redis_client
         self._usernames_mapper = usernames_mapper
         self._redis_key = redis_key
                                 
-        self._conversation_history = conversation_history
-
-    @property
-    def interacting_user_id(self) -> int:
-        return self._conversation_history.interacting_user_id
-
-    @interacting_user_id.setter
-    def interacting_user_id(self, interacting_user_id: int):
-        self._conversation_history.interacting_user_id = interacting_user_id
-
-    @property
-    def messages(self) -> List[HistoryMessage]:
-        return self._conversation_history.messages
-    
-    @messages.setter
-    def messages(self, messages: List[HistoryMessage]):
-        self._conversation_history.messages = messages
+        self.data = data
 
     async def save(self):
         """ Save conversation history.
         """
-        raw_json = json.dumps(self._conversation_history.dict())
+        raw_json = json.dumps(self.data.dict())
 
         await self._redis_client.set(self._redis_key, raw_json)
 
@@ -143,7 +129,7 @@ class ConversationHistoryRepoObject:
         """
         lines = []
         total_len = 0
-        for msg in self.messages:
+        for msg in self.data.messages:
             line = await msg.as_transcript_str(self._usernames_mapper)
             lines.append(line)
             total_len += len(line)
@@ -159,7 +145,7 @@ class ConversationHistoryRepoObject:
 
         while transcript_len > max_characters:
             # Remove oldest messages
-            removed_msg = self.messages.pop(0)
+            removed_msg = self.data.messages.pop(0)
             transcript_len -= len(await removed_msg.as_transcript_str(self._usernames_mapper))
 
 class ConversationHistoryRepo:
@@ -203,7 +189,7 @@ class ConversationHistoryRepo:
                 redis_client=self.redis_client,
                 usernames_mapper=self.usernames_mapper,
                 redis_key=redis_key,
-                conversation_history=ConversationHistory(
+                data=ConversationHistory(
                     interacting_user_id=interacting_user_id,
                     messages=[],
                 ),
@@ -215,5 +201,5 @@ class ConversationHistoryRepo:
             redis_client=self.redis_client,
             usernames_mapper=self.usernames_mapper,
             redis_key=redis_key,
-            conversation_history=ConversationHistory(**parsed_json),
+            data=ConversationHistory(**parsed_json),
         )
