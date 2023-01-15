@@ -247,7 +247,7 @@ class DiscordBot(discord.Bot):
             history = await self.conversation_history_repo.get(interaction.user.id)
             async with await history.lock():
                 # Record user's prompt and a blank message for the AI
-                history.messages.extend([
+                history.data.messages.extend([
                     HistoryMessage(
                         author_id=interaction.user.id,
                         body=prompt,
@@ -273,7 +273,7 @@ class DiscordBot(discord.Bot):
                     ai_resp = ai_resp_match.group(1) + ai_resp[ai_resp_match.span(1)[1]:]
 
                 # Record AI response in history
-                history.messages[-1].body = ai_resp
+                history.data.messages[-1].body = ai_resp
                 await history.trim(MAX_PROMPT_LENGTH)
 
                 await history.save()
@@ -405,7 +405,7 @@ class DiscordBot(discord.Bot):
             history = await self.conversation_history_repo.get(interaction.user.id)
 
             transcript_lines = []
-            for msg in history.messages:
+            for msg in history.data.messages:
                 username, body = await msg.as_transcript_tuple(self.conversation_history_repo.usernames_mapper)
                 username_md = f"**{username}:** "
 
@@ -414,7 +414,7 @@ class DiscordBot(discord.Bot):
                     transcript_lines.append(f"{username_md}{batch}")
 
             transcript = ""
-            if len(history.messages) > 0:
+            if len(history.data.messages) > 0:
                 transcript = "\n\n".join(transcript_lines)
             else:
                 transcript = "*No transcript history*"
@@ -458,7 +458,7 @@ Here is our conversation:
             history = await self.conversation_history_repo.get(interaction.user.id)
 
             async with await history.lock():
-                history.messages = []
+                history.data.messages = []
 
                 await history.save()
 
