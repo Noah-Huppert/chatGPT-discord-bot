@@ -57,6 +57,8 @@ The [`docker-compose.yaml`](./docker-compose.yaml) and [`dev.Dockerfile`](./dev.
    docker compose up -d --build
    ```
 
+To run type checking open a shell in the `chatgpt-discord-bot` container and run `pyright`.
+
 # Release Instructions
 1. Build the Docker image:
    ```
