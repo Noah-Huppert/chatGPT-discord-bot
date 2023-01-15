@@ -497,7 +497,7 @@ async def run_bot():
             redis_client=redis_client,
             usernames_mapper=NullUsernamesMapper(),
         ),
-        openai_client=OpenAI(api_key=cfg.open_ai_api_key),
+        openai_client=OpenAI(api_key=cfg.openai_api_key),
     )
 
     logger.info("Starting bot")

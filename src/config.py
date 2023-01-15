@@ -16,7 +16,7 @@ class Config(BaseModel):
     - discord_bot_token: Discord API token
     - discord_channel_id: If provided the bot will only respond to messages in a channel with this ID, if not provided the bot will run in all channels
     """
-    open_ai_api_key: str
+    openai_api_key: str
     redis_host: str
     redis_port: int
     redis_db: int
@@ -32,11 +32,11 @@ class Config(BaseModel):
         Returns: Config object populated with env vars.
         """
         return Config.parse_obj({
-            'open_ai_api_key': os.getenv('OPEN_AI_API_KEY'),
+            'openai_api_key': os.getenv('OPENAI_API_KEY'),
             'redis_host': os.getenv('REDIS_HOST', "redis"),
             'redis_port': os.getenv('REDIS_PORT', "6379"),
             'redis_db': os.getenv('REDIS_DB', "0"),
-            'discord_guild_id': os.getenv('REDIS_GUILD_ID'),
-            'discord_bot_token': os.getenv('REDIS_BOT_TOKEN'),
+            'discord_guild_id': os.getenv('DISCORD_GUILD_ID'),
+            'discord_bot_token': os.getenv('DISCORD_BOT_TOKEN'),
             'discord_channel_id': os.getenv('DISCORD_CHANNEL_ID'),
         })
