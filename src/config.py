@@ -21,7 +21,7 @@ class Config(BaseModel):
     redis_port: int
     redis_db: int
     discord_guild_id: int
-    discord_bot_token: set
+    discord_bot_token: str
     discord_channel_id: Optional[int]
 
     @staticmethod
@@ -31,7 +31,7 @@ class Config(BaseModel):
 
         Returns: Config object populated with env vars.
         """
-        return Config({
+        return Config.parse_obj({
             'open_ai_api_key': os.getenv('OPEN_AI_API_KEY'),
             'redis_host': os.getenv('REDIS_HOST', "redis"),
             'redis_port': os.getenv('REDIS_PORT', "6379"),

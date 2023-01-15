@@ -230,6 +230,14 @@ class DiscordBot(discord.Bot):
 
             await interaction.response.defer()
 
+            # Ensure user IDs
+            if interaction.user is None:
+                await interaction.followup.send(content=self.compose_error_msg("Sorry, I'm having trouble figuring out who you are"))
+                return
+            elif self.user is None:
+                await interaction.followup.send(content=self.compose_error_msg("Sorry, I'm having trouble figuring out who I am"))
+                return
+
             # Check prompt isn't too long
             if len(prompt) > MAX_PROMPT_LENGTH:
                 await interaction.followup.send(content=self.compose_error_msg(f"Prompt cannot me longer than {MAX_PROMPT_LENGTH} characters"))
@@ -255,13 +263,14 @@ class DiscordBot(discord.Bot):
                 transcript = "\n".join((await history.as_transcript_lines())[0])
                 ai_resp = await self.openai_client.create_completion(transcript)
                 if ai_resp is None:
-                    logger("No AI response")
+                    logger.warn("No AI response")
                     await interaction.followup.send(self.compose_error_msg("The AI did not know what to say"))
                     return
                 
                 # Trim leading newlines and whitespace
                 ai_resp_match = RM_LEADING_NEWLINES.search(ai_resp)
-                ai_resp = ai_resp_match.group(1) + ai_resp[ai_resp_match.span(1)[1]:]
+                if ai_resp_match is not None:
+                    ai_resp = ai_resp_match.group(1) + ai_resp[ai_resp_match.span(1)[1]:]
 
                 # Record AI response in history
                 history.messages[-1].body = ai_resp
@@ -314,6 +323,14 @@ class DiscordBot(discord.Bot):
 
             await interaction.response.defer()
 
+            # Ensure user IDs
+            if interaction.user is None:
+                await interaction.followup.send(content=self.compose_error_msg("Sorry, I'm having trouble figuring out who you are"))
+                return
+            elif self.user is None:
+                await interaction.followup.send(content=self.compose_error_msg("Sorry, I'm having trouble figuring out who I am"))
+                return
+
             # Check prompt isn't too long
             if len(prompt) > MAX_PROMPT_LENGTH:
                 await interaction.followup.send(content=self.compose_error_msg(f"Prompt cannot me longer than {MAX_PROMPT_LENGTH} characters"))
@@ -322,13 +339,14 @@ class DiscordBot(discord.Bot):
             # Ask AI
             ai_resp = await self.openai_client.create_completion(prompt)
             if ai_resp is None:
-                logger("No AI response")
+                logger.warn("No AI response")
                 await interaction.followup.send(self.compose_error_msg("The AI did not know what to say"))
                 return
             
             # Trim leading newlines and whitespace
             ai_resp_match = RM_LEADING_NEWLINES.search(ai_resp)
-            ai_resp = ai_resp_match.group(1) + ai_resp[ai_resp_match.span(1)[1]:]
+            if ai_resp_match is not None:
+                ai_resp = ai_resp_match.group(1) + ai_resp[ai_resp_match.span(1)[1]:]
 
             # Send Discord response
             logger.info(
@@ -379,6 +397,11 @@ class DiscordBot(discord.Bot):
 
             await interaction.response.defer(ephemeral=not show_publicly)
 
+            # Ensure user id
+            if interaction.user is None:
+                await interaction.followup.send(content=self.compose_error_msg("Sorry, I'm having trouble figuring out who you are"))
+                return
+
             history = await self.conversation_history_repo.get(interaction.user.id)
 
             transcript_lines = []
@@ -427,6 +450,11 @@ Here is our conversation:
 
             await interaction.response.defer()
 
+            # Ensure user id
+            if interaction.user is None:
+                await interaction.followup.send(content=self.compose_error_msg("Sorry, I'm having trouble figuring out who you are"))
+                return
+
             history = await self.conversation_history_repo.get(interaction.user.id)
 
             async with await history.lock():
@@ -474,4 +502,4 @@ async def run_bot():
 
     logger.info("Starting bot")
     
-    await bot.start(os.getenv('DISCORD_BOT_TOKEN'))
+    await bot.start(cfg.discord_bot_token)
