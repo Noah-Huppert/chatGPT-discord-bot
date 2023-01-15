@@ -1,6 +1,7 @@
 import discord
 import redis.asyncio as redis
 
+from src.config import Config
 from src.openai_client import OpenAI, MAX_PROMPT_LENGTH
 from src.message_history import ConversationHistoryRepo, UsernamesMapper, HistoryMessage
 
@@ -444,33 +445,29 @@ Here is our conversation:
 async def run_bot():
     logger.info("Run bot started")
 
+    cfg = Config.from_env()
+
     logger.info("Connecting to Redis")
 
     redis_client = redis.Redis(
-        host=os.getenv('REDIS_HOST', "redis"),
-        port=int(os.getenv('REDIS_PORT', "6379")),
-        db=int(os.getenv('REDIS_DB', "0")),
+        host=cfg.redis_host,
+        port=cfg.redis_port,
+        db=cfg.redis_db,
     )
 
     await redis_client.ping()
 
     logger.info("Connected to Redis")
 
-    channel_id = os.getenv('DISCORD_CHANNEL_ID')
-    if len(channel_id) == 0:
-        channel_id = None
-    if channel_id is not None:
-        channel_id = int(channel_id)
-
     bot = DiscordBot(
         logger=logger.getChild("discord_bot"),
-        guild_ids=[int(os.getenv('DISCORD_GUILD_ID'))],
-        channel_id=channel_id,
+        guild_ids=[cfg.discord_guild_id],
+        channel_id=cfg.discord_channel_id,
         conversation_history_repo=ConversationHistoryRepo(
             redis_client=redis_client,
             usernames_mapper=NullUsernamesMapper(),
         ),
-        openai_client=OpenAI(),
+        openai_client=OpenAI(api_key=cfg.open_ai_api_key),
     )
 
     logger.info("Starting bot")

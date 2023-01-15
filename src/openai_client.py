@@ -18,7 +18,16 @@ class CompletionPromptTooLong(Exception):
 
 class OpenAI:
     """ API client for OpenAI.
+    Fields:
+    - api_key: OpenAI API key
     """
+    api_key: str
+
+    def __init__(self, api_key: str):
+        """ Initializes.
+        """
+        self.api_key= api_key
+    
     async def create_completion(self, prompt: str) -> Optional[str]:
         """ Given a prompt use OpenAI to complete the text.
         Arguments:
@@ -30,6 +39,7 @@ class OpenAI:
 
         try:
             response = await sync_to_async(openai.Completion.create)(
+                api_key=self.api_key,
                 model="text-davinci-003",
                 prompt=prompt,
                 temperature=0.7,
