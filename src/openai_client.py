@@ -49,8 +49,10 @@ class OpenAI:
             )
         except openai.InvalidRequestError as e:
             # Detect if we hit the max token error
-            if e.http_status == 400 and ERR_BODY_COMPLETION_MAX_LENGTH in e.http_body:
+            if e.http_status == 400 and e.http_body is not None and isinstance(e.http_body, str) and ERR_BODY_COMPLETION_MAX_LENGTH in e.http_body:
                 raise CompletionPromptTooLong() from e
+            else:
+                raise e
 
 
         non_empty_responses = list(filter(lambda choice: len(choice.text) > 0, response.choices))

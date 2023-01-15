@@ -1,6 +1,6 @@
 import os
 import json
-from typing import List, Optional, Tuple
+from typing import List, Tuple
 import abc
 
 from pydantic import BaseModel
@@ -32,7 +32,7 @@ class HistoryMessage(BaseModel):
     author_id: int
     body: str
 
-    async def as_transcript_tuple(self, usernames_mapper: UsernamesMapper) -> str:
+    async def as_transcript_tuple(self, usernames_mapper: UsernamesMapper) -> Tuple[str, str]:
         """ Convert history message into a tuple (username, message body)
         Arguments:
         - usernames_mapper: Implementation of username mapper
