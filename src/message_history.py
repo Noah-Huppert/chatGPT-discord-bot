@@ -32,23 +32,6 @@ class HistoryMessage(BaseModel):
     author_id: int
     body: str
 
-    async def as_transcript_tuple(self, usernames_mapper: UsernamesMapper) -> Tuple[str, str]:
-        """ Convert history message into a tuple (username, message body)
-        Arguments:
-        - usernames_mapper: Implementation of username mapper
-        Returns: Tuple (username, message body)
-        """
-        return (await usernames_mapper.get_username(self.author_id), self.body)
-
-    async def as_transcript_str(self, usernames_mapper: UsernamesMapper) -> str:
-        """ Convert history message into a script format string.
-        Arguments:
-        - usernames_mapper: Implementation of username mapper
-        Returns: History message in format <username>: <body>
-        """
-        username, body = await self.as_transcript_tuple(usernames_mapper)
-        return f"{username}: {body}"
-
 class ConversationHistoryLock:
     redis_lock: RedisLock
     history: "ConversationHistoryRepoObject"
@@ -88,21 +71,18 @@ class ConversationHistoryRepoObject:
     """ Extends the pure dataclass ConversationHistory with database operations.
     Fields:
     - _redis_client: The Redis client
-    - _username_mapper: Implementation of usernames mapper
     - _redis_key: Key in which data will be stored in Redis
     - data: The underlying conversation history object
     """    
     _redis_client: redis.Redis
-    _usernames_mapper: UsernamesMapper
     _redis_key: str
 
     data: ConversationHistory
 
-    def __init__(self, redis_client: redis.Redis, usernames_mapper: UsernamesMapper, redis_key: str, data: ConversationHistory):
+    def __init__(self, redis_client: redis.Redis, redis_key: str, data: ConversationHistory):
         """ Initializes.
         """
         self._redis_client = redis_client
-        self._usernames_mapper = usernames_mapper
         self._redis_key = redis_key
                                 
         self.data = data
@@ -120,34 +100,6 @@ class ConversationHistoryRepoObject:
             history=self,
         )
 
-    async def as_transcript_lines(self) -> Tuple[List[str], int]:
-        """ Converts history into transcript lines.
-        Arguments:
-        - usernames_mapper: Implementation of username mapper
-
-        Returns: (List of transcript lines, Total length of transcript lines in characters)
-        """
-        lines = []
-        total_len = 0
-        for msg in self.data.messages:
-            line = await msg.as_transcript_str(self._usernames_mapper)
-            lines.append(line)
-            total_len += len(line)
-
-        return (lines, total_len)
-
-    async def trim(self, max_characters: int):
-        """ Remove the oldest conversation history items until the length of all the transcript lines is less than max_characters.
-        Arguments:
-        - max_characters: Length which to trim
-        """
-        _, transcript_len = await self.as_transcript_lines()
-
-        while transcript_len > max_characters:
-            # Remove oldest messages
-            removed_msg = self.data.messages.pop(0)
-            transcript_len -= len(await removed_msg.as_transcript_str(self._usernames_mapper))
-
 class ConversationHistoryRepo:
     """ Retrieves conversation history objects.
     Fields:
@@ -155,13 +107,11 @@ class ConversationHistoryRepo:
     - username_mapper: Implementation of usernames mapper
     """
     redis_client: redis.Redis
-    usernames_mapper: UsernamesMapper
 
-    def __init__(self, redis_client: redis.Redis, usernames_mapper: UsernamesMapper):
+    def __init__(self, redis_client: redis.Redis):
         """ Initializes.
         """
         self.redis_client = redis_client
-        self.usernames_mapper = usernames_mapper
 
     def get_redis_key(self, interacting_user_id: int) -> str:
         """ Generate the Redis key for a conversation history item.
@@ -187,7 +137,6 @@ class ConversationHistoryRepo:
             # Redis key does not exist
             return ConversationHistoryRepoObject(
                 redis_client=self.redis_client,
-                usernames_mapper=self.usernames_mapper,
                 redis_key=redis_key,
                 data=ConversationHistory(
                     interacting_user_id=interacting_user_id,
@@ -199,7 +148,6 @@ class ConversationHistoryRepo:
 
         return ConversationHistoryRepoObject(
             redis_client=self.redis_client,
-            usernames_mapper=self.usernames_mapper,
             redis_key=redis_key,
             data=ConversationHistory(**parsed_json),
         )

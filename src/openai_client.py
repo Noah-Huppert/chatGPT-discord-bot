@@ -1,10 +1,14 @@
 import openai
 from asgiref.sync import sync_to_async
+from transformers import GPT2TokenizerFast
 
 from typing import Optional
 
-# Maximum number of tokens (https://help.openai.com/en/articles/4936856-what-are-tokens-and-how-to-count-them) which can be sent as a prompt.
-MAX_PROMPT_LENGTH = 4096
+# Maximum number of tokens the GPT3 model can work with, including input and output (https://help.openai.com/en/articles/4936856-what-are-tokens-and-how-to-count-them)
+GPT3_MAX_TOKENS = 4096
+
+# Maximum number of tokens which can be sent as a prompt.
+MAX_PROMPT_LENGTH = GPT3_MAX_TOKENS / 2
 
 # OpenAI response body which indicates the prompt was too long.
 ERR_BODY_COMPLETION_MAX_LENGTH = "Please reduce your prompt; or completion length"
@@ -20,13 +24,16 @@ class OpenAI:
     """ API client for OpenAI.
     Fields:
     - api_key: OpenAI API key
+    - tokenizer: Used to convert strings into GPT3 tokens
     """
     api_key: str
+    prompt_tokenizer: GPT2TokenizerFast
 
     def __init__(self, api_key: str):
         """ Initializes.
         """
         self.api_key= api_key
+        self.prompt_tokenizer = GPT2TokenizerFast.from_pretrained("gpt2", max_length=MAX_PROMPT_LENGTH)
     
     async def create_completion(self, prompt: str) -> Optional[str]:
         """ Given a prompt use OpenAI to complete the text.

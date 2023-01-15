@@ -34,10 +34,6 @@ class DiscordUsernameNotFound(Exception):
         super().__init__(f"Username of user with ID '{user_id}' could not be found")
         self.user_id = user_id
 
-class NullUsernamesMapper(UsernamesMapper):
-    async def get_username(self, user_id: int) -> str:
-        return ""
-
 class DiscordUsernamesMapper(UsernamesMapper):
     """ Implements UsernamesMapper using Discord.
     Fields:
@@ -73,9 +69,6 @@ class DiscordUsernamesMapper(UsernamesMapper):
 
         return user.display_name
 
-class DiscordInteractionHandler(Protocol):
-    def __call__(self, interaction: discord.Interaction, *args, **kwargs) -> None: ...
-
 class DiscordBot(discord.Bot):
     """ Discord bot client.
     Fields:
@@ -83,12 +76,14 @@ class DiscordBot(discord.Bot):
     - guild_ids: Discord server IDs for which bot will respond
     - channel_id: ID of channel which bot is allowed to be used, if None then responds in every channel
     - conversation_history_repo: Message history repository
+    - usernames_mapper: Used to convert user IDs into strings
     - openai_client: OpenAI API client
     """
     logger: logging.Logger
     guild_ids: List[int]
     channel_id: Optional[int]
     conversation_history_repo: ConversationHistoryRepo
+    usernames_mapper: UsernamesMapper
     openai_client: OpenAI
 
     def __init__(
@@ -106,7 +101,7 @@ class DiscordBot(discord.Bot):
         self.channel_id = channel_id
 
         self.conversation_history_repo = conversation_history_repo
-        self.conversation_history_repo.usernames_mapper = DiscordUsernamesMapper(self)
+        self.usernames_mapper = DiscordUsernamesMapper(self)
 
         self.openai_client = openai_client
 
@@ -495,7 +490,6 @@ async def run_bot():
         channel_id=cfg.discord_channel_id,
         conversation_history_repo=ConversationHistoryRepo(
             redis_client=redis_client,
-            usernames_mapper=NullUsernamesMapper(),
         ),
         openai_client=OpenAI(api_key=cfg.openai_api_key),
     )
