@@ -114,18 +114,30 @@ class DiscordBot(discord.Bot):
             name="chat",
             description="Chat with GPT3",
             guild_ids=self.guild_ids,
-        )(self.chat)
+        )(
+            discord.option("prompt", description="Text to send to the bot")(
+                self.chat
+            )
+        )
         self.application_command(
             name="incognito-chat",
             description="Send a prompt to the bot without providing or saving any conversation history",
             guild_ids=guild_ids,            
-        )(self.incognito_chat)
+        )(
+            discord.option("prompt", description="Text to send to the bot")(
+                self.incognito_chat
+            )
+        )
         self.application_command(
             name="transcript",
             description="Reveal the chat transcript being recorded by the bot",
             guild_ids=self.guild_ids,
 
-        )(self.transcript)
+        )(
+            discord.option("show-publicly", description="If the transcript should be sent so everyone can see it", default=False)(
+                self.transcript
+            )
+        )
         self.application_command(
             name="clear-transcript",
             description="Clear the transcript of you and the bots previous messages",
@@ -201,10 +213,7 @@ class DiscordBot(discord.Bot):
     async def chat(
         self,
         interaction: discord.Interaction,
-        prompt: discord.Option(
-            input_type=str,
-            description="Text to send to the bot",
-        ),
+        prompt: str,
     ):
         """ /chat <prompt> - User gives the bot a prompt and it responds with GPT3.
         Arguments:
@@ -291,10 +300,7 @@ class DiscordBot(discord.Bot):
     async def incognito_chat(
         self,
         interaction: discord.Interaction,
-        prompt: discord.Option(
-            input_type=str,
-            description="Text to send to the bot",
-        ),
+        prompt: str,
     ):
         """ /incognito-chat - Provides a prompt to the OpenAI model without providing a chat transcript or recording the answer.
         """
@@ -357,11 +363,7 @@ class DiscordBot(discord.Bot):
     async def transcript(
         self,
         interaction: discord.Interaction,
-        show_publicly: discord.Option(
-            input_type=str,
-            name="show-publicly",
-            description="If the transcript should be sent so everyone can see it",
-        )=False,
+        show_publicly: bool,
     ):
         """ /transcript - Prints the user and bots transcript.
         Arguments:
