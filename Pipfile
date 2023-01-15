@@ -9,9 +9,11 @@ asgiref = "==3.6.0"
 redis = "*"
 pydantic = "*"
 py-cord = "*"
+transformers = "*"
 
 [dev-packages]
 watchdog = "*"
+pyright = "*"
 
 [requires]
 python_version = "3"
